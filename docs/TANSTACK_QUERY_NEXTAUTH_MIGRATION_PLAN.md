@@ -23,7 +23,7 @@
 | **API client** | `src/lib/api.ts` — `apiFetch()` wrapper around `fetch`, reads token from Zustand store |
 | **Auth state** | `src/store/authStore.ts` — Zustand + `localStorage` (`auth_token`, `auth_user`) |
 | **Data fetching** | Manual `useEffect` + `useState` in each page/component (`page.tsx`, `PostCard.tsx`, `SuggestedFriends.tsx`, `notifications/page.tsx`, `profile/[userId]/page.tsx`) |
-| **Server** | `server.mjs` — custom Node + Socket.IO, polls Route Posts REST API |
+| **Server** | `server.mjs` — custom Node + Socket.IO, polls Route Posts REST API **(to be removed for Vercel deployment)** |
 | **Token** | JWT in `localStorage`, sent as `Authorization: Bearer <token>` + `token: <token>` headers |
 
 ---
@@ -88,7 +88,7 @@
 | 2.10 | Remove `src/store/authStore.ts` (Zustand) — replace with `useSession()` hook | Delete + refactor |
 | 2.11 | Update `Header.tsx` — use `useSession()` for user avatar, name, sign out | `Header.tsx` |
 | 2.12 | Update `notifications/page.tsx`, `profile/page.tsx`, etc. — use `useSession()` | Each page |
-| 2.13 | Update `server.mjs` (Socket.IO) — read token from cookie instead of `auth.token` | `server.mjs` |
+| 2.13 | **Replace Socket.IO real-time notifications with client-side polling** (since Vercel doesn't support WebSockets) | `useNotificationSocket.ts` → `useEffect` polling |
 
 ### Phase 3 — Cookie-Based Token Flow
 
@@ -97,7 +97,7 @@
 | 3.1 | NextAuth sets `auth.js.session-token` (HttpOnly, Secure, SameSite=Lax) on login | Automatic |
 | 3.2 | Client-side `apiFetch` reads token from **NextAuth session** (`useSession().data.accessToken`) instead of localStorage | `src/lib/api.ts` |
 | 3.3 | Server-side `apiFetch` (in RSC) reads token from `cookies().get('auth.js.session-token')` via `getServerSession()` | `src/lib/api.ts` |
-| 3.4 | Socket.IO handshake — send token via cookie (NextAuth sets it) or via `auth: { token }` from client after `useSession()` | `server.mjs` + `src/lib/socket.ts` |
+| 3.4 | **Replace Socket.IO with client-side polling** for notifications (15-30s interval) | `useNotificationSocket.ts` → `useEffect` + `setInterval` |
 | 3.5 | 401 handling — if Route Posts returns 401, call `signOut()` (clears cookie) and redirect to `/auth` | `src/lib/api.ts` interceptor |
 
 ### Phase 4 — Cleanup & Polish
@@ -133,8 +133,8 @@
 | `src/components/PostCard.tsx` | `useMutation` for like/bookmark/comment |
 | `src/components/SuggestedFriends.tsx` | `useQuery` + `useMutation` |
 | `src/components/Header.tsx` | Use `useSession()` |
-| `src/hooks/useNotificationSocket.ts` | Read token from `useSession()` |
-| `server.mjs` | Read token from cookie |
+| `src/hooks/useNotificationSocket.ts` | **Replace Socket.IO with client-side polling** (15-30s interval) |
+| `server.mjs` | **Delete** (Vercel doesn't support custom Node servers) |
 | `src/store/authStore.ts` | **Delete** |
 | `src/store/themeStore.ts` | **Delete** (or migrate to `next-themes`) |
 
@@ -149,7 +149,7 @@
 | **Feed loads via TanStack Query** | Devtools shows query cache, deduped requests |
 | **Optimistic like** | Heart fills instantly, rolls back on error |
 | **Follow button** | Toggles instantly, syncs with server |
-| **Notifications** | Real-time via Socket.IO (token from cookie) |
+| **Notifications** | Polling-based (15-30s interval, Vercel-compatible) |
 | **SSR profile** | `/profile/:id` renders user data on server (no client flash) |
 | **Sign out** | Clears cookie, redirects to `/auth` |
 | **401 handling** | Expired token → auto sign-out + redirect |

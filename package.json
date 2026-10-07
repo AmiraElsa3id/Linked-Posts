@@ -3,10 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node server.mjs",
-    "dev:next": "next dev",
+    "dev": "next dev",
     "build": "next build",
-    "start": "node server.mjs --production",
+    "start": "next start",
     "lint": "eslint",
     "graph": "npx code-review-graph"
   },
